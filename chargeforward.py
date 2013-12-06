@@ -56,22 +56,20 @@ if droplet["status"] != "OK":
   print >> sys.stderr, droplet["error_message"]
   sys.exit(1)
 
-droplet = droplet["droplet"]["id"]
-
-print("Deployed.")
-sys.stdout.write("Waiting for it to come up")
-sys.stdout.flush()
+droplet = droplet["droplet"]
 
 ip_address = None
 while True:
-  d = json.load(urllib2.urlopen("%s/droplets/%i?%s" % (url, droplet, urllib.urlencode(request))))["droplet"]
+  d = json.load(urllib2.urlopen("%s/droplets/%i?%s" % (url, droplet["id"], urllib.urlencode(request))))["droplet"]
+  e = json.load(urllib2.urlopen("%s/events/%i?%s" % (url, droplet["event_id"], urllib.urlencode(request))))
+  percentage = int(e["event"]["percentage"] or 0)
+  sys.stdout.write('\b\b\b%i%%' % (percentage))
+  sys.stdout.flush()
   if d["status"] == "active":
-    print("")
+    print("\b\b\bDeployed!")
     ip_address = d["ip_address"]
     break
-  time.sleep(10)
-  sys.stdout.write(".")
-  sys.stdout.flush()
+  time.sleep(1)
 
 ssh = None
 should_run = True
@@ -80,13 +78,13 @@ def signal_handler(signal, frame):
   global should_run
   should_run = False
   print "\nGot ^C, killing ssh and destroying VM"
-  d = json.load(urllib2.urlopen("%s/droplets/%i/destroy?%s" % (url, droplet, urllib.urlencode(request))))
+  d = json.load(urllib2.urlopen("%s/droplets/%i/destroy?%s" % (url, droplet["id"], urllib.urlencode(request))))
   ssh.kill()
   ssh.wait()
   if d["status"] == "OK":
     print "Everything destroyed correctly."
   else:
-    print >> sys.stderr, ("Droplet (with id: %i and name: %s) not destroyed correctly, please correct manually." % (droplet, args.fqdn))
+    print >> sys.stderr, ("Droplet (with id: %i and name: %s) not destroyed correctly, please correct manually." % (droplet["id"], args.fqdn))
     sys.exit(1)
 
 signal.signal(signal.SIGINT, signal_handler)
