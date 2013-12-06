@@ -73,7 +73,12 @@ while True:
   sys.stdout.write(".")
   sys.stdout.flush()
 
+ssh = None
+should_run = True
+
 def signal_handler(signal, frame):
+  global should_run
+  should_run = False
   print "\nGot ^C, killing ssh and destroying VM"
   d = json.load(urllib2.urlopen("%s/droplets/%i/destroy?%s" % (url, droplet, urllib.urlencode(request))))
   ssh.kill()
@@ -86,9 +91,18 @@ def signal_handler(signal, frame):
 
 signal.signal(signal.SIGINT, signal_handler)
 
-with open(os.devnull, 'w') as devnull:
-  ssh = subprocess.Popen(["ssh", "-D %s%i" % ("0.0.0.0:" if not args.local else "", args.port), "root@%s" % ip_address], stdout=devnull, stderr=devnull)
+def fork_ssh():
+  with open(os.devnull, 'w') as devnull:
+    global ssh
+    ssh = subprocess.Popen(["ssh", "-N", "-oUserKnownHostsFile=/dev/null", "-oStrictHostKeyChecking=no", "-D %s%i" % ("0.0.0.0:" if not args.local else "", args.port), "root@%s" % ip_address], stdout=devnull, stderr=devnull)
+
+if ssh == None:
+  fork_ssh()
 
 print "SOCKS-proxy up at port %i" % args.port
 print "Press ^C to disconnect and destroy the VM"
-signal.pause()
+
+while should_run:
+  if ssh.poll() != None:
+    fork_ssh()
+  time.sleep(1)
