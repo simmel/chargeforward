@@ -107,6 +107,7 @@ def signal_handler(signal, frame):
     print "Everything destroyed correctly."
   else:
     print >> sys.stderr, ("Droplet (with id: %i and name: %s) not destroyed correctly, please correct manually." % (droplet["id"], args.fqdn))
+    print d
     sys.exit(1)
 
 signal.signal(signal.SIGINT, signal_handler)
