@@ -8,8 +8,10 @@ parser.add_argument('-c', '--client-id', help='Your client ID at Digital Ocean',
 parser.add_argument('-a', '--api-key', help='Your API-key at Digital Ocean', required=True)
 parser.add_argument('-p', '--port', help='Port to use for SOCKS proxy', default=8080, type=int)
 parser.add_argument('-l', '--local', help='Only bind to localhost', action="store_true", default=False)
+parser.add_argument('-r', '--region', help='The slug-name of the region to launch you VPS in, e.g. nyc1')
 
 args = parser.parse_args()
+region = None
 
 url = "https://api.digitalocean.com"
 request = {
@@ -23,13 +25,18 @@ if len(regions) == 0:
   sys.exit(1)
 
 for k,v in enumerate(regions):
-  print "%i. %s" % (k, v)
+  if args.region == v['slug']:
+    region = v['id']
 
-while True:
-    i = int(raw_input('In which region do you want to deploy?: '))
-    if 0 <= i <= len(regions)-1:
-        region = regions[i]["id"]
-        break
+if not region:
+  for k,v in enumerate(regions):
+    print "%i. %s" % (k, v)
+
+  while True:
+      i = int(raw_input('In which region do you want to deploy?: '))
+      if 0 <= i <= len(regions)-1:
+          region = regions[i]["id"]
+          break
 
 images = json.load(urllib2.urlopen("%s/images/?%s" % (url, urllib.urlencode(dict(request.items() + {"filter": "my_images"}.items())))))["images"]
 
