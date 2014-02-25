@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # vim: set fileencoding=utf8
-import os, subprocess, time, signal, sys, json, urllib, urllib2, argparse
+import os, subprocess, time, signal, sys, json, urllib, urllib2, argparse, socket
 
 parser = argparse.ArgumentParser(description='Create a VM temporary on Digital Ocean to use as a SOCKS proxy.')
-parser.add_argument('-f', '--fqdn', help='FQDN of your new VM', required=True)
+parser.add_argument('-f', '--fqdn', help='FQDN of your new VM, default: FQDN of your machine', default=socket.getfqdn())
 parser.add_argument('-c', '--client-id', help='Your client ID at Digital Ocean', required=True)
 parser.add_argument('-a', '--api-key', help='Your API-key at Digital Ocean', required=True)
 parser.add_argument('-p', '--port', help='Port to use for SOCKS proxy', default=8080, type=int)
