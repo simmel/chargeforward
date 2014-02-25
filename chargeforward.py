@@ -12,6 +12,7 @@ parser.add_argument('-r', '--region', help='The slug-name of the region to launc
 
 args = parser.parse_args()
 region = None
+image = None
 
 url = "https://api.digitalocean.com"
 request = {
@@ -19,38 +20,52 @@ request = {
   "api_key": args.api_key
 }
 
-regions = json.load(urllib2.urlopen("%s/regions/?%s" % (url, urllib.urlencode(request))))["regions"]
-if len(regions) == 0:
-  print >> sys.stderr, ("No regions available!?")
-  sys.exit(1)
-
-for k,v in enumerate(regions):
-  if args.region == v['slug']:
-    region = v['id']
-
-if not region:
-  for k,v in enumerate(regions):
-    print "%i. %s" % (k, v)
-
-  while True:
-      i = int(raw_input('In which region do you want to deploy?: '))
-      if 0 <= i <= len(regions)-1:
-          region = regions[i]["id"]
-          break
-
 images = json.load(urllib2.urlopen("%s/images/?%s" % (url, urllib.urlencode(dict(request.items() + {"filter": "my_images"}.items())))))["images"]
 
 if len(images) == 0:
   print >> sys.stderr, ("No images available. Create your image first")
   sys.exit(1)
 
-for k,v in enumerate(images):
-  print "%i. %s" % (k, v)
+if len(images) == 1:
+  print "Only found one image, picking that."
+  image = images[0]['id']
+  regions = images[0]['regions']
+  if len(regions) == 1:
+    region = regions[0]
+  else:
+    for k,v in enumerate(regions):
+      print "%i. %s" % (v, images[0]['region_slugs'][k])
 
-while True:
+      while True:
+          i = int(raw_input('In which region do you want to deploy?: '))
+          if 0 <= i <= len(regions)-1:
+              region = regions[i]
+              break
+
+if not image:
+  for k,v in enumerate(images):
+    print "%i. %s" % (k, v)
+
+  while True:
     i = int(raw_input('Which image do you want to deploy?: '))
     if 0 <= i <= len(images)-1:
-        image = images[i]["id"]
+      image = images[i]["id"]
+      image_dict = images[i]
+      break
+
+  for k,v in enumerate(image_dict['regions']):
+    print "%i. %s" % (k, image_dict['region_slugs'][k])
+
+    while True:
+        i = int(raw_input('In which region do you want to deploy?: '))
+        for k,v in enumerate(image_dict['regions']):
+          if i == k:
+            print "setting region!"
+            region = image_dict['regions'][k]
+            break
+        # Oh Python... http://stackoverflow.com/a/654002
+        else:
+          continue
         break
 
 ssh_keys = json.load(urllib2.urlopen("%s/ssh_keys/?%s" % (url, urllib.urlencode(request))))["ssh_keys"]
