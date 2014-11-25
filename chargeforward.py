@@ -60,7 +60,6 @@ if not image:
         i = int(raw_input('In which region do you want to deploy?: '))
         for k,v in enumerate(image_dict['regions']):
           if i == k:
-            print "setting region!"
             region = image_dict['regions'][k]
             break
         # Oh Python... http://stackoverflow.com/a/654002
